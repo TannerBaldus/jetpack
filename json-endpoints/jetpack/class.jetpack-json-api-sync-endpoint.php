@@ -249,8 +249,8 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			return $queue_name;
 		}
 
-		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 ) {
-			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0', 400 );
+		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 && (int) $args[ 'number_of_items' ] > 100 ) {
+			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
 		}
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
@@ -268,7 +268,7 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		if ( isset( $args['force'] ) && $args['force'] ) {
 			$queue->force_checkin();
 		}
-		
+
 		$encode = ( $args['encode'] ? true : false );
 
 		$codec_name = $encode ? $codec->name() : null;
