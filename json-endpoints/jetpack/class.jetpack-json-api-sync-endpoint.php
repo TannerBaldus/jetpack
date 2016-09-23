@@ -250,8 +250,9 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		}
 
 		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 && (int) $args[ 'number_of_items' ] > 100 ) {
-			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
+			return new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
 		}
+
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-json-deflate-array-codec.php';
