@@ -739,6 +739,55 @@ new Jetpack_JSON_API_Sync_Now_Endpoint( array(
 	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/now?queue=full_sync'
 ) );
 
+// GET /sites/%s/sync/checkout
+new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
+	'description'     => 'Checkout items from a queue.',
+	'method'          => 'GET',
+	'path'            => '/sites/%s/sync/checkout',
+	'stat'            => 'sync-checkout',
+	'path_labels' => array(
+		'$site' => '(int|string) The site ID, The site domain'
+	),
+	'query_parameters' => array(
+		'queue'             => '(string) sync or full_sync',
+		'number_of_items'   => '(int) number of items to be returned',
+		'show_errors'       => '(bool) Force Show PHP Errors this might be helpful with debugging',
+		'force'             => '(bool) Force unlock the queue',
+		'encode'            => '(bool) Use the default encode method'
+	),
+	'response_format' => array(
+		'buffer_id' => '(string) Buffer ID that we are using',
+		'items'             => '(array) Encoded items that are ready to be processed by the sync server',
+		'skipped_items'     => '(array) Skipped item ids',
+		'codec'             => '(string) The Name of the codec used to encode the data',
+		'server_microtime'  => '(int) Microtime of the server.',
+	),
+	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/checkout'
+) );
+
+// POST /sites/%s/sync/close
+new Jetpack_JSON_API_Sync_Close_Endpoint( array(
+	'description'     => 'Close the buffer and delete the processed items from the queue.',
+	'method'          => 'POST',
+	'path'            => '/sites/%s/sync/close',
+	'stat'            => 'sync-close',
+	'path_labels' => array(
+		'$site' => '(int|string) The site ID, The site domain'
+	),
+	'query_parameters' => array(
+		'queue'      => '(string) sync or full_sync',
+		'buffer_id'  => '(string) buffer',
+	),
+	'request_format' => array(
+		'items'  => '(array) Item IDs',
+	),
+	'response_format' => array(
+		'success' => '(bool) Was closing the buffer successful'
+	),
+	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/close'
+) );
+
+
 require_once( $json_jetpack_endpoints_dir . 'class.jetpack-json-api-log-endpoint.php' );
 
 new Jetpack_JSON_API_Jetpack_Log_Endpoint( array(

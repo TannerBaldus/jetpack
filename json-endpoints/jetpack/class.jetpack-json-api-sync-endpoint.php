@@ -36,6 +36,18 @@ class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
 
 		return array( 'scheduled' => Jetpack_Sync_Actions::schedule_full_sync( $modules ) );
 	}
+
+	protected function validate_queue( $query ) {
+
+		if ( ! isset( $query ) ) {
+			return new WP_Error( 'invalid_queue', 'Queue name is required', 400 );
+		}
+
+		if ( ! in_array( $query, array( 'sync', 'full_sync' ) ) ) {
+			return new WP_Error( 'invalid_queue', 'Queue name should be sync or full_sync', 400 );
+		}
+		return $query;
+	}
 }
 
 // GET /sites/%s/sync/status
@@ -212,16 +224,11 @@ class Jetpack_JSON_API_Sync_Object extends Jetpack_JSON_API_Sync_Endpoint {
 class Jetpack_JSON_API_Sync_Now_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	protected function result() {
 		$args = $this->input();
+		$queue_name = $this->validate_queue( $args['queue'] );
 
-		if ( ! isset( $args['queue'] ) ) {
-			return new WP_Error( 'invalid_queue', 'Queue name is required', 400 );
+		if ( is_wp_error( $queue_name ) ){
+			return $queue_name;
 		}
-
-		if ( ! in_array( $args['queue'], array( 'sync', 'full_sync' ) ) ) {
-			return new WP_Error( 'invalid_queue', 'Queue name should be sync or full_sync', 400 );
-		}
-
-		$queue_name = $args['queue'];
 
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 
@@ -230,6 +237,147 @@ class Jetpack_JSON_API_Sync_Now_Endpoint extends Jetpack_JSON_API_Sync_Endpoint 
 
 		return array(
 			'response' => $response
+		);
+	}
+}
+
+
+class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
+	protected function result() {
+		$args = $this->query_args();
+		$queue_name = $this->validate_queue( $args['queue'] );
+
+		if ( is_wp_error( $queue_name ) ){
+			return $queue_name;
+		}
+
+		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 ) {
+			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be in integer and should be larger that is larger then 0', 400 );
+		}
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-json-deflate-array-codec.php';
+
+		$queue = new Jetpack_Sync_Queue( $queue_name );
+		$codec = new Jetpack_Sync_JSON_Deflate_Array_Codec();
+
+		// We need the sender to set up all the before send module actions...
+		$sender = Jetpack_Sync_Sender::get_instance();
+		
+		$skipped_items_ids = array();
+
+		// let's delete the checkin state
+		if ( isset( $args['force'] ) && $args['force'] ) {
+			$queue->force_checkin();
+		}
+
+		if ( isset( $args['show_errors'] ) && $args['show_errors'] ) {
+			error_reporting( E_ERROR | E_WARNING | E_PARSE );
+		}
+		$encode = ( $args['encode'] ? true : false );
+
+		$codec_name = $encode ? $codec->name() : null;
+
+		$buffer = $this->get_buffer( $queue, $args[ 'number_of_items' ] );
+		
+		// Check that the $buffer is not checkout out already
+		if ( is_wp_error( $buffer ) ) {
+			return new WP_Error( 'buffer-open', 'We couldn\'t get the buffer it is currently checked out', 400 );
+		}
+		
+		if ( ! is_object( $buffer ) ) {
+			return new WP_Error( 'buffer-non-object', 'Buffer is not an object', 400 );
+		}
+
+		$items         = $buffer->get_items();
+
+		// set up current screen to avoid errors rendering content
+		require_once( ABSPATH . 'wp-admin/includes/class-wp-screen.php' );
+		require_once( ABSPATH . 'wp-admin/includes/screen.php' );
+		set_current_screen( 'sync' );
+
+		foreach ( $items as $key => $item ) {
+			// Suspending cache addition help prevent overloading in memory cache of large sites.
+			wp_suspend_cache_addition( true );
+
+			/** This filter is documented in sync/class.jetpack-sync-sender.php */
+			$item[1] = apply_filters( 'jetpack_sync_before_send_' . $item[0], $item[1], $item[2] );
+			wp_suspend_cache_addition( false );
+			if ( $item[1] === false ) {
+				$skipped_items_ids[] = $key;
+				continue;
+			}
+			$items_to_send[ $key ] = ( $encode ?  $codec->encode( $item ) : $item );
+		}
+	
+		return array(
+			'buffer_id' => $buffer->id,
+			'items' => $items_to_send,
+			'skipped_items' => $skipped_items_ids,
+			'codec' => $codec_name,
+			'server_microtime' => microtime( true ),
+		);
+	}
+
+	protected function get_buffer( $queue, $number_of_items ) {
+		$start = time();
+		$max_duration = 5;
+
+		$buffer = $this->try_getting_buffer( $queue , $number_of_items );
+		$duration = time() - $start;
+
+		while( ! $buffer && $duration < $max_duration ) {
+			$buffer = $this->try_getting_buffer( $queue , $number_of_items );
+			$duration = time() - $start;
+		}
+
+		return $buffer;
+	}
+
+	protected function try_getting_buffer( $queue , $number_of_items ) {
+
+		$buffer = $queue->checkout( $number_of_items );
+		if ( is_wp_error( $buffer ) ) {
+			sleep( 2 ); // let's wait for 2 seconds before we even allow this function to be called again.
+		}
+		return $buffer;
+	}
+}
+
+
+class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
+	protected function result() {
+		$args = $this->query_args();
+		$queue_name = $this->validate_queue( $args['queue'] );
+
+		if( is_wp_error( $queue_name ) ) {
+			return $queue_name;
+		}
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
+
+		if ( ! isset( $args['buffer_id'] ) ) {
+			return new WP_Error( 'missing_buffer_id', 'Please provide a buffer id', 400 );
+		}
+
+		$request_body = $this->input();
+
+		if ( ! isset( $request_body['item_ids'] ) && is_array( $request_body['item_ids'] ) ) {
+			return new WP_Error( 'missing_item_ids', 'Please provide a item ids', 400 );
+		}
+
+
+		$buffer = new Jetpack_Sync_Queue_Buffer( $args['buffer_id'], $args['item_ids'] );
+
+		$queue = new Jetpack_Sync_Queue( $queue_name );
+		$response = $queue->close( $buffer, $args['item_ids'] );
+		
+		
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		return array(
+			'success' => $response
 		);
 	}
 }
