@@ -38,7 +38,6 @@ class Jetpack_JSON_API_Sync_Endpoint extends Jetpack_JSON_API_Endpoint {
 	}
 
 	protected function validate_queue( $query ) {
-
 		if ( ! isset( $query ) ) {
 			return new WP_Error( 'invalid_queue', 'Queue name is required', 400 );
 		}
@@ -241,7 +240,6 @@ class Jetpack_JSON_API_Sync_Now_Endpoint extends Jetpack_JSON_API_Sync_Endpoint 
 	}
 }
 
-
 class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	protected function result() {
 		$args = $this->query_args();
@@ -252,7 +250,7 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		}
 
 		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 ) {
-			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be in integer and should be larger that is larger then 0', 400 );
+			return  new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0', 400 );
 		}
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
@@ -282,14 +280,14 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		
 		// Check that the $buffer is not checkout out already
 		if ( is_wp_error( $buffer ) ) {
-			return new WP_Error( 'buffer-open', 'We couldn\'t get the buffer it is currently checked out', 400 );
+			return new WP_Error( 'buffer_open', "We couldn't get the buffer it is currently checked out", 400 );
 		}
 		
 		if ( ! is_object( $buffer ) ) {
-			return new WP_Error( 'buffer-non-object', 'Buffer is not an object', 400 );
+			return new WP_Error( 'buffer_non-object', 'Buffer is not an object', 400 );
 		}
 
-		$items         = $buffer->get_items();
+		$items = $buffer->get_items();
 
 		// set up current screen to avoid errors rendering content
 		require_once( ABSPATH . 'wp-admin/includes/class-wp-screen.php' );
@@ -344,7 +342,6 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 	}
 }
 
-
 class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	protected function result() {
 		$args = $this->query_args();
@@ -362,15 +359,12 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 		$request_body = $this->input();
 
 		if ( ! isset( $request_body['item_ids'] ) && is_array( $request_body['item_ids'] ) ) {
-			return new WP_Error( 'missing_item_ids', 'Please provide a item ids', 400 );
+			return new WP_Error( 'missing_item_ids', 'Please provide a list of item ids in the item_ids argument', 400 );
 		}
 
-
 		$buffer = new Jetpack_Sync_Queue_Buffer( $args['buffer_id'], $args['item_ids'] );
-
 		$queue = new Jetpack_Sync_Queue( $queue_name );
 		$response = $queue->close( $buffer, $args['item_ids'] );
-		
 		
 		if ( is_wp_error( $response ) ) {
 			return $response;
