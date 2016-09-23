@@ -751,7 +751,6 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	'query_parameters' => array(
 		'queue'             => '(string) sync or full_sync',
 		'number_of_items'   => '(int) number of items to be returned',
-		'show_errors'       => '(bool) Force Show PHP Errors this might be helpful with debugging',
 		'force'             => '(bool) Force unlock the queue',
 		'encode'            => '(bool) Use the default encode method'
 	),

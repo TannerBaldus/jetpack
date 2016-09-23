@@ -268,10 +268,7 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		if ( isset( $args['force'] ) && $args['force'] ) {
 			$queue->force_checkin();
 		}
-
-		if ( isset( $args['show_errors'] ) && $args['show_errors'] ) {
-			error_reporting( E_ERROR | E_WARNING | E_PARSE );
-		}
+		
 		$encode = ( $args['encode'] ? true : false );
 
 		$codec_name = $encode ? $codec->name() : null;
