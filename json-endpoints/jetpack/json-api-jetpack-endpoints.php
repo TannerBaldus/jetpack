@@ -759,7 +759,7 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 		'items'             => '(array) Encoded items that are ready to be processed by the sync server',
 		'skipped_items'     => '(array) Skipped item ids',
 		'codec'             => '(string) The Name of the codec used to encode the data',
-		'server_microtime'  => '(int) Microtime of the server.',
+		'sent_timestamp'    => '(int) Current timestamp of the server.',
 	),
 	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/checkout'
 ) );

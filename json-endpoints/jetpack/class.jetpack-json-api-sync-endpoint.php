@@ -311,7 +311,7 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			'items' => $items_to_send,
 			'skipped_items' => $skipped_items_ids,
 			'codec' => $codec_name,
-			'server_microtime' => microtime( true ),
+			'sent_timestamp' => time(),
 		);
 	}
 
