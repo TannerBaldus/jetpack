@@ -253,14 +253,19 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			return new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
 		}
 
-		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
-		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-json-deflate-array-codec.php';
-
 		$queue = new Jetpack_Sync_Queue( $queue_name );
-		$codec = new Jetpack_Sync_JSON_Deflate_Array_Codec();
+
+		$encode = ( isset( $args['encode'] ) && $args['encode'] ? true : false );
+		$codec_name = null;
+		if ( $encode ) {
+			require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-json-deflate-array-codec.php';
+			$codec = new Jetpack_Sync_JSON_Deflate_Array_Codec();
+			$codec_name = $codec->name();
+		}
 
 		// We need the sender to set up all the before send module actions...
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
 		$sender = Jetpack_Sync_Sender::get_instance();
 		
 		$skipped_items_ids = array();
@@ -269,10 +274,6 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		if ( isset( $args['force'] ) && $args['force'] ) {
 			$queue->force_checkin();
 		}
-
-		$encode = ( $args['encode'] ? true : false );
-
-		$codec_name = $encode ? $codec->name() : null;
 
 		$buffer = $this->get_buffer( $queue, $args[ 'number_of_items' ] );
 		
@@ -307,10 +308,10 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		}
 	
 		return array(
-			'buffer_id' => $buffer->id,
-			'items' => $items_to_send,
-			'skipped_items' => $skipped_items_ids,
-			'codec' => $codec_name,
+			'buffer_id'      => $buffer->id,
+			'items'          => $items_to_send,
+			'skipped_items'  => $skipped_items_ids,
+			'codec'          => $codec_name,
 			'sent_timestamp' => time(),
 		);
 	}
@@ -331,7 +332,6 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 	}
 
 	protected function try_getting_buffer( $queue , $number_of_items ) {
-
 		$buffer = $queue->checkout( $number_of_items );
 		if ( is_wp_error( $buffer ) ) {
 			sleep( 2 ); // let's wait for 2 seconds before we even allow this function to be called again.
@@ -345,7 +345,7 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 		$args = $this->query_args();
 		$queue_name = $this->validate_queue( $args['queue'] );
 
-		if( is_wp_error( $queue_name ) ) {
+		if ( is_wp_error( $queue_name ) ) {
 			return $queue_name;
 		}
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
