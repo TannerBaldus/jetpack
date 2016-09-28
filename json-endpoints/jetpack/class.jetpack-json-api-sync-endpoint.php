@@ -256,6 +256,10 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
 		$queue = new Jetpack_Sync_Queue( $queue_name );
 
+		if ( $queue->size() < 1 ) {
+			return new WP_Error( 'queue_size', "The queue is empty and there is nothing to send", 400 );
+		}
+
 		$encode = ( isset( $args['encode'] ) && $args['encode'] ? true : false );
 		$codec_name = null;
 		if ( $encode ) {
