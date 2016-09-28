@@ -778,7 +778,7 @@ new Jetpack_JSON_API_Sync_Close_Endpoint( array(
 		'buffer_id'  => '(string) buffer',
 	),
 	'request_format' => array(
-		'items'  => '(array) Item IDs',
+		'item_ids'  => '(array) Item IDs',
 	),
 	'response_format' => array(
 		'success' => '(bool) Was closing the buffer successful'

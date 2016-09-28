@@ -342,27 +342,31 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 
 class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoint {
 	protected function result() {
-		$args = $this->query_args();
-		$queue_name = $this->validate_queue( $args['queue'] );
+		$query_args = $this->query_args();
+		$queue_name = $this->validate_queue( $query_args['queue'] );
 
 		if ( is_wp_error( $queue_name ) ) {
 			return $queue_name;
 		}
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
 
-		if ( ! isset( $args['buffer_id'] ) ) {
+		if ( ! isset( $query_args['buffer_id'] ) ) {
 			return new WP_Error( 'missing_buffer_id', 'Please provide a buffer id', 400 );
 		}
 
 		$request_body = $this->input();
 
-		if ( ! isset( $request_body['item_ids'] ) && is_array( $request_body['item_ids'] ) ) {
+		if ( ! isset( $request_body['item_ids'] ) || ! is_array( $request_body['item_ids'] ) ) {
 			return new WP_Error( 'missing_item_ids', 'Please provide a list of item ids in the item_ids argument', 400 );
 		}
 
-		$buffer = new Jetpack_Sync_Queue_Buffer( $args['buffer_id'], $args['item_ids'] );
+		//Limit to A-Z,a-z,0-9,_,-
+		$query_args ['buffer_id'] = preg_replace( '/[^A-Za-z0-9]/', '', $query_args['buffer_id'] );
+		$request_body['item_ids'] = array_filter( array_map( array( 'Jetpack_JSON_API_Sync_Close_Endpoint', 'sanitize_item_ids' ), $request_body['item_ids'] ) );
+
+		$buffer = new Jetpack_Sync_Queue_Buffer( $query_args['buffer_id'], $request_body['item_ids'] );
 		$queue = new Jetpack_Sync_Queue( $queue_name );
-		$response = $queue->close( $buffer, $args['item_ids'] );
+		$response = $queue->close( $buffer, $request_body['item_ids'] );
 		
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -371,5 +375,13 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 		return array(
 			'success' => $response
 		);
+	}
+
+	protected static function sanitize_item_ids( $item ) {
+		// lets not delete any options that don't start with jpsq_sync-
+		if ( substr( $item , 0, 5) !== 'jpsq_' ) {
+			return null;
+		}
+		return preg_replace( '/[^A-Za-z0-9-_.]/', '', $item );
 	}
 }
