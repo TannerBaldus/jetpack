@@ -744,6 +744,7 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	'description'     => 'Locks the queue and returns items and the buffer ID.',
 	'method'          => 'POST',
 	'path'            => '/sites/%s/sync/checkout',
+	'group'           => '__do_not_document',
 	'stat'            => 'sync-checkout',
 	'path_labels' => array(
 		'$site' => '(int|string) The site ID, The site domain'
@@ -769,6 +770,7 @@ new Jetpack_JSON_API_Sync_Close_Endpoint( array(
 	'description'     => 'Closes the buffer and delete the processed items from the queue.',
 	'method'          => 'POST',
 	'path'            => '/sites/%s/sync/close',
+	'group'           => '__do_not_document',
 	'stat'            => 'sync-close',
 	'path_labels' => array(
 		'$site' => '(int|string) The site ID, The site domain'
