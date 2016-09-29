@@ -741,7 +741,7 @@ new Jetpack_JSON_API_Sync_Now_Endpoint( array(
 
 // GET /sites/%s/sync/checkout
 new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
-	'description'     => 'Checkout items from a queue.',
+	'description'     => 'Locks the queue and returns items and the buffer ID.',
 	'method'          => 'POST',
 	'path'            => '/sites/%s/sync/checkout',
 	'stat'            => 'sync-checkout',
@@ -750,23 +750,23 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	),
 	'request_format' => array(
 		'queue'             => '(string) sync or full_sync',
-		'number_of_items'   => '(int) number of items to be returned',
+		'number_of_items'   => '(int) Maximum number of items from the queue to be returned',
+		'encode'            => '(bool) Use the default encode method',
 		'force'             => '(bool) Force unlock the queue',
-		'encode'            => '(bool) Use the default encode method'
 	),
 	'response_format' => array(
 		'buffer_id' => '(string) Buffer ID that we are using',
-		'items'             => '(array) Encoded items that are ready to be processed by the sync server',
+		'items'             => '(array) Items from the queue that are ready to be processed by the sync server',
 		'skipped_items'     => '(array) Skipped item ids',
-		'codec'             => '(string) The Name of the codec used to encode the data',
-		'sent_timestamp'    => '(int) Current timestamp of the server.',
+		'codec'             => '(string) The name of the codec used to encode the data',
+		'sent_timestamp'    => '(int) Current timestamp of the server',
 	),
 	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/checkout'
 ) );
 
 // POST /sites/%s/sync/close
 new Jetpack_JSON_API_Sync_Close_Endpoint( array(
-	'description'     => 'Close the buffer and delete the processed items from the queue.',
+	'description'     => 'Closes the buffer and delete the processed items from the queue.',
 	'method'          => 'POST',
 	'path'            => '/sites/%s/sync/close',
 	'stat'            => 'sync-close',
@@ -774,9 +774,9 @@ new Jetpack_JSON_API_Sync_Close_Endpoint( array(
 		'$site' => '(int|string) The site ID, The site domain'
 	),
 	'request_format' => array(
-		'item_ids'  => '(array) Item IDs',
+		'item_ids'  => '(array) Item IDs to delete from the queue.',
 		'queue'      => '(string) sync or full_sync',
-		'buffer_id'  => '(string) buffer',
+		'buffer_id'  => '(string) buffer ID that was opened during the checkout step.',
 	),
 	'response_format' => array(
 		'success' => '(bool) Was closing the buffer successful'
