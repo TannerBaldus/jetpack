@@ -742,7 +742,7 @@ new Jetpack_JSON_API_Sync_Now_Endpoint( array(
 // GET /sites/%s/sync/checkout
 new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	'description'     => 'Checkout items from a queue.',
-	'method'          => 'GET',
+	'method'          => 'POST',
 	'path'            => '/sites/%s/sync/checkout',
 	'stat'            => 'sync-checkout',
 	'path_labels' => array(
