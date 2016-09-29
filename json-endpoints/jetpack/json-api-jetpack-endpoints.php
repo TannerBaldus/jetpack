@@ -748,7 +748,7 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	'path_labels' => array(
 		'$site' => '(int|string) The site ID, The site domain'
 	),
-	'query_parameters' => array(
+	'request_format' => array(
 		'queue'             => '(string) sync or full_sync',
 		'number_of_items'   => '(int) number of items to be returned',
 		'force'             => '(bool) Force unlock the queue',
@@ -773,12 +773,10 @@ new Jetpack_JSON_API_Sync_Close_Endpoint( array(
 	'path_labels' => array(
 		'$site' => '(int|string) The site ID, The site domain'
 	),
-	'query_parameters' => array(
-		'queue'      => '(string) sync or full_sync',
-		'buffer_id'  => '(string) buffer',
-	),
 	'request_format' => array(
 		'item_ids'  => '(array) Item IDs',
+		'queue'      => '(string) sync or full_sync',
+		'buffer_id'  => '(string) buffer',
 	),
 	'response_format' => array(
 		'success' => '(bool) Was closing the buffer successful'
