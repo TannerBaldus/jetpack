@@ -779,7 +779,7 @@ new Jetpack_JSON_API_Sync_Close_Endpoint( array(
 		'buffer_id'  => '(string) buffer ID that was opened during the checkout step.',
 	),
 	'response_format' => array(
-		'success' => '(bool) Was closing the buffer successful'
+		'success' => '(bool) Closed the buffer successfully?'
 	),
 	'example_request' => 'https://public-api.wordpress.com/rest/v1.1/sites/example.wordpress.org/sync/close'
 ) );
