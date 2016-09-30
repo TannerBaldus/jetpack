@@ -249,14 +249,18 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			return $queue_name;
 		}
 
-		if ( is_int( $args[ 'number_of_items' ] ) && (int) $args[ 'number_of_items' ] < 1 && (int) $args[ 'number_of_items' ] > 100 ) {
+		if ( ! isset( $args[ 'number_of_items' ] ) ) {
+			return new WP_Error( 'invalid_number_of_items', 'Number of items is required.', 400 );
+		}
+
+		if ( $args[ 'number_of_items' ] < 1 || $args[ 'number_of_items' ] > 100  ) {
 			return new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
 		}
 
 		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-queue.php';
 		$queue = new Jetpack_Sync_Queue( $queue_name );
 
-		if ( $queue->size() < 1 ) {
+		if ( 0 === $queue->size() ) {
 			return new WP_Error( 'queue_size', 'The queue is empty and there is nothing to send', 400 );
 		}
 
