@@ -751,9 +751,9 @@ new Jetpack_JSON_API_Sync_Checkout_Endpoint( array(
 	),
 	'request_format' => array(
 		'queue'             => '(string) sync or full_sync',
-		'number_of_items'   => '(int) Maximum number of items from the queue to be returned',
-		'encode'            => '(bool) Use the default encode method',
-		'force'             => '(bool) Force unlock the queue',
+		'number_of_items'   => '(int=10) Maximum number of items from the queue to be returned',
+		'encode'            => '(bool=true) Use the default encode method',
+		'force'             => '(bool=false) Force unlock the queue',
 	),
 	'response_format' => array(
 		'buffer_id' => '(string) Buffer ID that we are using',

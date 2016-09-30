@@ -249,10 +249,6 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			return $queue_name;
 		}
 
-		if ( ! isset( $args[ 'number_of_items' ] ) ) {
-			return new WP_Error( 'invalid_number_of_items', 'Number of items is required.', 400 );
-		}
-
 		if ( $args[ 'number_of_items' ] < 1 || $args[ 'number_of_items' ] > 100  ) {
 			return new WP_Error( 'invalid_number_of_items', 'Number of items needs to be an integer that is larger than 0 and less then 100', 400 );
 		}
@@ -264,23 +260,17 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 			return new WP_Error( 'queue_size', 'The queue is empty and there is nothing to send', 400 );
 		}
 
-		$encode = ( isset( $args['encode'] ) && $args['encode'] ? true : false );
-		$codec_name = null;
-		if ( $encode ) {
-			require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-json-deflate-array-codec.php';
-			$codec = new Jetpack_Sync_JSON_Deflate_Array_Codec();
-			$codec_name = $codec->name();
+		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
+		$codec = null;
+		if ( $args['encode'] ) {
+			$codec = Jetpack_Sync_Sender::get_instance()->get_codec();
 		}
 
-		// We need the sender to set up all the before send module actions...
-		require_once JETPACK__PLUGIN_DIR . 'sync/class.jetpack-sync-sender.php';
-		$sender = Jetpack_Sync_Sender::get_instance();
-		
 		$skipped_items_ids = array();
 
 		// let's delete the checkin state
-		if ( isset( $args['force'] ) && $args['force'] ) {
-			$queue->force_checkin();
+		if ( $args['force'] ) {
+			$queue->unlock();
 		}
 
 		$buffer = $this->get_buffer( $queue, $args[ 'number_of_items' ] );
@@ -312,38 +302,33 @@ class Jetpack_JSON_API_Sync_Checkout_Endpoint extends Jetpack_JSON_API_Sync_Endp
 				$skipped_items_ids[] = $key;
 				continue;
 			}
-			$items_to_send[ $key ] = ( $encode ?  $codec->encode( $item ) : $item );
+			$items_to_send[ $key ] = ( $args['encode'] ?  $codec->encode( $item ) : $item );
 		}
 	
 		return array(
 			'buffer_id'      => $buffer->id,
 			'items'          => $items_to_send,
 			'skipped_items'  => $skipped_items_ids,
-			'codec'          => $codec_name,
+			'codec'          => $codec ? $codec->name() : null,
 			'sent_timestamp' => time(),
 		);
 	}
 
 	protected function get_buffer( $queue, $number_of_items ) {
 		$start = time();
-		$max_duration = 5;
+		$max_duration = 5; // this will try to get the buffer
 
 		$buffer = $this->try_getting_buffer( $queue , $number_of_items );
 		$duration = time() - $start;
 
 		while( ! $buffer && $duration < $max_duration ) {
-			$buffer = $this->try_getting_buffer( $queue , $number_of_items );
+			$buffer = $queue->checkout( $number_of_items );
+			if(  is_wp_error( $buffer ) ) {
+				sleep( 2 );
+			}
 			$duration = time() - $start;
 		}
 
-		return $buffer;
-	}
-
-	protected function try_getting_buffer( $queue , $number_of_items ) {
-		$buffer = $queue->checkout( $number_of_items );
-		if ( is_wp_error( $buffer ) ) {
-			sleep( 2 ); // let's wait for 2 seconds before we even allow this function to be called again.
-		}
 		return $buffer;
 	}
 }
@@ -388,6 +373,7 @@ class Jetpack_JSON_API_Sync_Close_Endpoint extends Jetpack_JSON_API_Sync_Endpoin
 		if ( substr( $item , 0, 5) !== 'jpsq_' ) {
 			return null;
 		}
+		//Limit to A-Z,a-z,0-9,_,-,.
 		return preg_replace( '/[^A-Za-z0-9-_.]/', '', $item );
 	}
 }
